@@ -3,28 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>8-Ball Pool</title>
+    <title>8-Ball Pool Challenge</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { margin: 0; padding: 0; background-color: #1a1a1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; padding: 0; background-color: #121212; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; overflow: hidden; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; }
         
-        /* The beautiful pool table */
+        /* Game Container */
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* The Pool Table */
         .table-wrap {
             width: 360px;
             height: 640px;
-            background-color: #2e8b57;
-            border: 20px solid #5c4033;
-            border-radius: 20px;
+            background-color: #1e5631;
+            border: 18px solid #4a3319;
+            border-radius: 18px;
             position: relative;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 15px 40px rgba(0,0,0,0.9);
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.6), 0 15px 35px rgba(0,0,0,0.8);
         }
 
         /* Pockets */
         .pocket {
-            position: absolute; width: 44px; height: 44px; background-color: #050505; border-radius: 50%;
-            box-shadow: inset 0 5px 15px rgba(0,0,0,1);
+            position: absolute; width: 42px; height: 42px; background-color: #050505; border-radius: 50%;
+            box-shadow: inset 0 5px 12px rgba(0,0,0,0.9);
             transform: translate(-50%, -50%);
+            z-index: 1;
         }
 
         /* Balls */
@@ -32,12 +41,40 @@
             position: absolute; width: 24px; height: 24px; border-radius: 50%;
             transform: translate(-50%, -50%);
             box-shadow: -2px -2px 5px rgba(0,0,0,0.6) inset, 2px 2px 5px rgba(255,255,255,0.4) inset, 2px 4px 6px rgba(0,0,0,0.5);
+            z-index: 2;
         }
 
-        #cue-ball { background-color: #fff; }
-        
-        #eight-ball { background-color: #111; display: flex; align-items: center; justify-content: center; }
-        #eight-ball::after { content: "8"; background: white; color: black; width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+        #cue-ball { background-color: #fff; cursor: pointer; }
+        #eight-ball { background-color: #111; display: flex; align-items: center; justify-content: center; z-index: 2; }
+        #eight-ball::after { content: "8"; background: white; color: black; width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; }
+
+        /* Aim Line (SVG Overlay) */
+        #aim-svg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3;
+        }
+
+        /* Power Bar UI */
+        .power-container {
+            width: 300px;
+            height: 14px;
+            background-color: #222;
+            border: 2px solid #555;
+            border-radius: 7px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .power-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4CAF50, #FFEB3B, #F44336);
+            transition: width 0.05s linear;
+        }
+        .turn-indicator {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #ccc;
+        }
 
         /* Proposal Screen CSS */
         #proposal-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 2s ease-in-out; z-index: 100; color: white;}
@@ -57,18 +94,31 @@
 </head>
 <body>
 
-    <div class="table-wrap">
-        <!-- Visual Pockets -->
-        <div class="pocket" style="left: 20px; top: 20px;"></div>
-        <div class="pocket" style="left: 340px; top: 20px;"></div>
-        <div class="pocket" style="left: 20px; top: 320px;"></div>
-        <div class="pocket" style="left: 340px; top: 320px;"></div>
-        <div class="pocket" style="left: 20px; top: 620px;"></div>
-        <div class="pocket" style="left: 340px; top: 620px;"></div>
+    <div class="game-container">
+        <div class="turn-indicator" id="turn-text">PULL BACK TO SHOOT</div>
+        
+        <div class="table-wrap" id="pool-table">
+            <!-- Pockets -->
+            <div class="pocket" style="left: 20px; top: 20px;"></div>
+            <div class="pocket" style="left: 340px; top: 20px;"></div>
+            <div class="pocket" style="left: 20px; top: 320px;"></div>
+            <div class="pocket" style="left: 340px; top: 320px;"></div>
+            <div class="pocket" style="left: 20px; top: 620px;"></div>
+            <div class="pocket" style="left: 340px; top: 620px;"></div>
 
-        <!-- Visual Balls -->
-        <div id="cue-ball" class="ball"></div>
-        <div id="eight-ball" class="ball"></div>
+            <!-- Aim Line Overlay -->
+            <svg id="aim-svg">
+                <line id="aim-line" x1="0" y1="0" x2="0" y2="0" stroke="rgba(255, 255, 255, 0.6)" stroke-width="2" stroke-dasharray="4,4" />
+            </svg>
+
+            <!-- Balls -->
+            <div id="cue-ball" class="ball"></div>
+            <div id="eight-ball" class="ball"></div>
+        </div>
+
+        <div class="power-container">
+            <div class="power-fill" id="power-fill"></div>
+        </div>
     </div>
 
     <!-- The Hidden Proposal Screen -->
@@ -81,7 +131,7 @@
             </div>
         </div>
         <div class="answers">
-            <button class="answer-btn" onclick="alert('Yay! ❤️️')">Yes</button>
+            <button class="answer-btn" onclick="alert('Yay! ❤️')">Yes</button>
             <button class="answer-btn" onclick="alert('I knew it! ❤️')">Absolutely</button>
         </div>
     </div>
@@ -89,22 +139,22 @@
 <script>
     const socket = io();
     
-    // Setup Physics Engine (Running Headless/Invisible)
+    // Physics Engine Setup
     const Engine = Matter.Engine, Runner = Matter.Runner, 
           Bodies = Matter.Bodies, Composite = Matter.Composite, Events = Matter.Events;
     
     const engine = Engine.create();
     engine.gravity.y = 0; 
 
-    // Invisible Walls exactly matched to the visual border
+    // Table boundaries
     Composite.add(engine.world, [
-        Bodies.rectangle(180, -10, 360, 20, { isStatic: true }), // Top
-        Bodies.rectangle(180, 650, 360, 20, { isStatic: true }), // Bottom
-        Bodies.rectangle(-10, 320, 20, 640, { isStatic: true }), // Left
-        Bodies.rectangle(370, 320, 20, 640, { isStatic: true })  // Right
+        Bodies.rectangle(180, -10, 360, 20, { isStatic: true }), 
+        Bodies.rectangle(180, 650, 360, 20, { isStatic: true }), 
+        Bodies.rectangle(-10, 320, 20, 640, { isStatic: true }), 
+        Bodies.rectangle(370, 320, 20, 640, { isStatic: true })  
     ]);
 
-    // Invisible Physics Pockets
+    // Pockets
     const pocketOptions = { isStatic: true, isSensor: true };
     const pockets = [
         Bodies.circle(20, 20, 22, pocketOptions), Bodies.circle(340, 20, 22, pocketOptions),
@@ -113,9 +163,9 @@
     ];
     Composite.add(engine.world, pockets);
 
-    const ballOptions = { frictionAir: 0.015, restitution: 0.9, density: 0.005 };
+    // Realistic Glide Physics
+    const ballOptions = { frictionAir: 0.012, restitution: 0.92, density: 0.005 };
 
-    // Create Invisible Physics Balls
     let cueBall = Bodies.circle(180, 490, 12, ballOptions);
     let eightBall = Bodies.circle(180, 150, 12, { ...ballOptions, label: '8ball' });
 
@@ -124,7 +174,7 @@
     const runner = Runner.create();
     Runner.run(runner, engine);
 
-    // Sync Invisible Physics positions to the Beautiful HTML Graphics
+    // Sync Physics to Visual DOM elements
     Events.on(engine, 'afterUpdate', () => {
         document.getElementById('cue-ball').style.left = cueBall.position.x + 'px';
         document.getElementById('cue-ball').style.top = cueBall.position.y + 'px';
@@ -133,31 +183,99 @@
         document.getElementById('eight-ball').style.top = eightBall.position.y + 'px';
     });
 
-    // Universal Shooting Mechanics (Works on Mouse AND Touchscreens)
-    let startX, startY;
-    document.body.addEventListener('pointerdown', (e) => {
-        startX = e.clientX;
-        startY = e.clientY;
+    // Aiming & Interactive Mechanics
+    let isAiming = false;
+    let startX = 0, startY = 0;
+    const tableElement = document.getElementById('pool-table');
+    const aimLine = document.getElementById('aim-line');
+    const powerFill = document.getElementById('power-fill');
+    const turnText = document.getElementById('turn-text');
+
+    tableElement.addEventListener('pointerdown', (e) => {
+        const rect = tableElement.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        // Check if clicking near cue ball
+        const dist = Math.hypot(mouseX - cueBall.position.x, mouseY - cueBall.position.y);
+        if (dist < 30) {
+            isAiming = true;
+            startX = cueBall.position.x;
+            startY = cueBall.position.y;
+        }
     });
 
-    document.body.addEventListener('pointerup', (e) => {
-        const endX = e.clientX;
-        const endY = e.clientY;
-        
-        const forceX = (startX - endX) * 0.0002;
-        const forceY = (startY - endY) * 0.0002;
+    tableElement.addEventListener('pointermove', (e) => {
+        if (!isAiming) return;
 
-        if(Math.abs(forceX) > 0.005 || Math.abs(forceY) > 0.005) {
+        const rect = tableElement.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+
+        // Pullback vector (slingshot direction is opposite to drag)
+        const pullX = currentX - cueBall.position.x;
+        const pullY = currentY - cueBall.position.y;
+        const distance = Math.hypot(pullX, pullY);
+
+        // Max pull distance cap
+        const maxPull = 120;
+        const clampedDist = Math.min(distance, maxPull);
+        
+        // Update Power Bar
+        const powerPercent = (clampedDist / maxPull) * 100;
+        powerFill.style.width = powerPercent + '%';
+
+        if (distance > 5) {
+            // Angle of shot projection
+            const angle = Math.atan2(pullY, pullX);
+            const aimLength = 100; // length of projected line
+            const targetX = cueBall.position.x - Math.cos(angle) * aimLength;
+            const targetY = cueBall.position.y - Math.sin(angle) * aimLength;
+
+            aimLine.setAttribute('x1', cueBall.position.x);
+            aimLine.setAttribute('y1', cueBall.position.y);
+            aimLine.setAttribute('x2', targetX);
+            aimLine.setAttribute('y2', targetY);
+        }
+    });
+
+    tableElement.addEventListener('pointerup', (e) => {
+        if (!isAiming) return;
+        isAiming = false;
+
+        const rect = tableElement.getBoundingClientRect();
+        const endX = e.clientX - rect.left;
+        const endY = e.clientY - rect.top;
+
+        const pullX = endX - cueBall.position.x;
+        const pullY = endY - cueBall.position.y;
+        const distance = Math.hypot(pullX, pullY);
+
+        if (distance > 10) {
+            const angle = Math.atan2(pullY, pullX);
+            const power = Math.min(distance, 120) * 0.00035; // strength scaling
+
+            const forceX = Math.cos(angle) * power;
+            const forceY = Math.sin(angle) * power;
+
             Matter.Body.applyForce(cueBall, cueBall.position, { x: forceX, y: forceY });
             socket.emit('shoot', { x: forceX, y: forceY });
+
+            turnText.innerText = "WAITING FOR OPPONENT...";
         }
+
+        // Reset UI elements
+        aimLine.setAttribute('x1', 0); aimLine.setAttribute('y1', 0);
+        aimLine.setAttribute('x2', 0); aimLine.setAttribute('y2', 0);
+        powerFill.style.width = '0%';
     });
 
     socket.on('opponentShot', (force) => {
         Matter.Body.applyForce(cueBall, cueBall.position, force);
+        turnText.innerText = "YOUR TURN";
     });
 
-    // Pocket Collision Logic (The Proposal Trigger!)
+    // Pocket Collision Logic (Proposal Trigger)
     Events.on(engine, 'collisionStart', (event) => {
         event.pairs.forEach((pair) => {
             const isPocket = pockets.includes(pair.bodyA) || pockets.includes(pair.bodyB);
@@ -165,14 +283,12 @@
 
             if (isPocket) {
                 if (ball.label === '8ball') {
-                    // STOP THE GAME & SHOW PROPOSAL!
                     setTimeout(() => {
                         document.getElementById('proposal-screen').classList.add('visible');
                         document.getElementById('magic-ball').classList.add('reveal');
                     }, 500);
                 }
                 
-                // If cue ball goes in, respawn it
                 if (ball === cueBall) {
                     Matter.Body.setPosition(cueBall, { x: 180, y: 490 });
                     Matter.Body.setVelocity(cueBall, { x: 0, y: 0 });
@@ -180,7 +296,6 @@
             }
         });
     });
-
 </script>
 </body>
 </html>
