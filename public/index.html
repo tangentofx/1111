@@ -10,35 +10,27 @@
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap');
         
         body { 
-            margin: 0; padding: 0; 
-            background: radial-gradient(circle at center, #1a1e29 0%, #080a0f 100%); 
+            margin: 0; padding: 0; background: radial-gradient(circle at center, #1a1e29 0%, #080a0f 100%); 
             display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            height: 100vh; overflow: hidden; touch-action: none; 
-            font-family: 'Montserrat', sans-serif; color: white; 
+            height: 100vh; overflow: hidden; touch-action: none; font-family: 'Montserrat', sans-serif; color: white; 
         }
         
         /* Modern HUD */
-        .hud {
-            display: flex; justify-content: space-between; width: 360px; margin-bottom: 15px; align-items: center;
-        }
+        .hud { display: flex; justify-content: space-between; width: 360px; margin-bottom: 15px; align-items: center; }
         .turn-badge {
             background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 20px; 
             font-size: 11px; font-weight: 800; letter-spacing: 1.5px; 
-            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: all 0.3s;
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: all 0.3s;
         }
         #turn-text.active { color: #00e676; border-color: #00e676; }
 
         /* The Premium Pool Table */
         .table-wrap {
-            width: 360px; height: 640px; 
-            background: radial-gradient(circle, #2a7b48 0%, #114022 100%); 
+            width: 360px; height: 640px; background: radial-gradient(circle, #2a7b48 0%, #114022 100%); 
             border: 22px solid #362210; border-radius: 24px; position: relative; 
             box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 20px 50px rgba(0,0,0,0.9);
             border-image: linear-gradient(to bottom, #4a3018, #2a1a0c) 1;
         }
-
-        /* Inner Rail Shadow */
         .table-wrap::before {
             content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
             box-shadow: inset 0 0 15px rgba(0,0,0,0.9); pointer-events: none; z-index: 5;
@@ -51,10 +43,7 @@
             transform: translate(-50%, -50%); z-index: 1; border: 2px solid #22150a;
         }
 
-        /* High-Definition Canvas for Laser Aiming */
-        #aim-canvas {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none;
-        }
+        #aim-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
 
         /* 3D Balls */
         .ball {
@@ -66,18 +55,34 @@
         #eight-ball { background: radial-gradient(circle at 35% 35%, #444, #000); display: flex; align-items: center; justify-content: center; }
         #eight-ball::after { content: "8"; background: #fff; color: #000; width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; box-shadow: inset 0px 0px 2px rgba(0,0,0,0.5); }
 
-        /* Neon Power Bar */
+        /* --- THE NEW ANIMATIONS --- */
+        
+        /* Realistic Pocket Drop */
+        .pocketed {
+            transform: translate(-50%, -50%) scale(0) !important;
+            opacity: 0 !important;
+            transition: all 0.4s cubic-bezier(0.55, 0.085, 0.68, 0.53) !important;
+        }
+
+        /* The Jumpscare Blast */
+        .jumpscare {
+            position: fixed !important;
+            top: 50% !important; left: 50% !important;
+            transform: translate(-50%, -50%) scale(150) !important;
+            z-index: 9999 !important;
+            opacity: 1 !important;
+            transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1) !important;
+        }
+
+        /* Power Bar */
         .power-container {
             width: 360px; height: 10px; background: #0a0a0a; border-radius: 5px; margin-top: 25px; 
             border: 2px solid #222; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
         }
-        .power-fill {
-            height: 100%; width: 0%; background: linear-gradient(90deg, #00e676, #ffea00, #ff1744); 
-            transition: width 0.05s linear; box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-        }
+        .power-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00e676, #ffea00, #ff1744); transition: width 0.05s linear; }
 
-        /* The Secret Proposal Screen */
-        #proposal-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.98); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 2s ease-in-out; z-index: 100; color: white;}
+        /* Proposal Screen */
+        #proposal-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 1); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 1.5s ease-in-out; z-index: 10000; color: white;}
         #proposal-screen.visible { opacity: 1; pointer-events: all; }
         .magic-8-ball { width: 280px; height: 280px; background-color: #111; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: -10px -10px 40px rgba(255,255,255,0.05) inset, 10px 10px 40px rgba(0,0,0,0.9); animation: shake 1.5s ease-in-out 1s forwards; opacity: 0; transform: scale(0.5); transition: all 1s ease-in-out; }
         .magic-8-ball.reveal { opacity: 1; transform: scale(1); }
@@ -94,13 +99,18 @@
 </head>
 <body>
 
+    <!-- Loaded Sound Effects -->
+    <audio id="snd-strike" src="https://cdn.jsdelivr.net/gh/bencentra/canvas-billiards/sounds/strike.wav"></audio>
+    <audio id="snd-click" src="https://cdn.jsdelivr.net/gh/bencentra/canvas-billiards/sounds/click.wav"></audio>
+    <audio id="snd-hole" src="https://cdn.jsdelivr.net/gh/bencentra/canvas-billiards/sounds/hole.wav"></audio>
+    <audio id="snd-jumpscare" src="https://actions.google.com/sounds/v1/horror/scary_whoosh.ogg"></audio>
+
     <div class="hud">
         <div class="turn-badge active" id="turn-text">PULL TO SHOOT</div>
         <div class="turn-badge">8-BALL</div>
     </div>
     
     <div class="table-wrap" id="pool-table">
-        <!-- Pockets -->
         <div class="pocket" style="left: 20px; top: 20px;"></div>
         <div class="pocket" style="left: 340px; top: 20px;"></div>
         <div class="pocket" style="left: 20px; top: 320px;"></div>
@@ -108,10 +118,8 @@
         <div class="pocket" style="left: 20px; top: 620px;"></div>
         <div class="pocket" style="left: 340px; top: 620px;"></div>
 
-        <!-- High-Def Canvas for Aim Laser -->
         <canvas id="aim-canvas"></canvas>
 
-        <!-- Balls -->
         <div id="cue-ball" class="ball"></div>
         <div id="eight-ball" class="ball"></div>
     </div>
@@ -120,7 +128,6 @@
         <div class="power-fill" id="power-fill"></div>
     </div>
 
-    <!-- The Hidden Proposal Screen -->
     <div id="proposal-screen">
         <div class="magic-8-ball" id="magic-ball">
             <div class="fortune-window">
@@ -138,19 +145,25 @@
 <script>
     const socket = io();
     
-    // Physics Setup
+    // Audio Player Function
+    function playSound(id, vol = 1.0) {
+        let snd = document.getElementById(id);
+        if(!snd) return;
+        snd.currentTime = 0;
+        snd.volume = Math.min(vol, 1);
+        snd.play().catch(e => {}); // Ignores autoplay restrictions until screen is touched
+    }
+
     const Engine = Matter.Engine, Runner = Matter.Runner, 
           Bodies = Matter.Bodies, Composite = Matter.Composite, Events = Matter.Events;
     
     const engine = Engine.create();
     engine.gravity.y = 0; 
-    
-    // Higher iteration counts for hyper-realistic collisions
-    engine.positionIterations = 8;
-    engine.velocityIterations = 8;
+    engine.positionIterations = 10; // Extra realistic
+    engine.velocityIterations = 10;
 
-    // Table Cushions (Bouncier for realism)
-    const wallOptions = { isStatic: true, restitution: 0.8 };
+    // Bouncy Rail Cushions
+    const wallOptions = { isStatic: true, restitution: 0.85, label: 'wall' };
     Composite.add(engine.world, [
         Bodies.rectangle(180, -11, 360, 22, wallOptions), 
         Bodies.rectangle(180, 651, 360, 22, wallOptions), 
@@ -158,7 +171,7 @@
         Bodies.rectangle(371, 320, 22, 640, wallOptions)  
     ]);
 
-    const pocketOptions = { isStatic: true, isSensor: true };
+    const pocketOptions = { isStatic: true, isSensor: true, label: 'pocket' };
     const pockets = [
         Bodies.circle(20, 20, 22, pocketOptions), Bodies.circle(340, 20, 22, pocketOptions),
         Bodies.circle(20, 320, 20, pocketOptions), Bodies.circle(340, 320, 20, pocketOptions),
@@ -166,17 +179,16 @@
     ];
     Composite.add(engine.world, pockets);
 
-    // Realistic Heavy Billiard Ball Physics
-    const ballOptions = { frictionAir: 0.015, restitution: 0.95, density: 0.01 };
+    // Ultra-Realistic Ball Mass & Friction
+    const ballOptions = { frictionAir: 0.012, restitution: 0.9, density: 0.02 };
 
-    let cueBall = Bodies.circle(180, 490, 12, ballOptions);
+    let cueBall = Bodies.circle(180, 490, 12, { ...ballOptions, label: 'cueball' });
     let eightBall = Bodies.circle(180, 150, 12, { ...ballOptions, label: '8ball' });
     Composite.add(engine.world, [cueBall, eightBall]);
 
     const runner = Runner.create();
     Runner.run(runner, engine);
 
-    // High-Resolution Aiming Canvas Setup
     const aimCanvas = document.getElementById('aim-canvas');
     const ctx = aimCanvas.getContext('2d');
     const scale = window.devicePixelRatio || 1;
@@ -184,15 +196,18 @@
     aimCanvas.height = 640 * scale;
     ctx.scale(scale, scale);
 
+    let stopDomSync = false; // Used during animations
+
     // Sync DOM to Physics
     Events.on(engine, 'afterUpdate', () => {
+        if(stopDomSync) return;
         document.getElementById('cue-ball').style.left = cueBall.position.x + 'px';
         document.getElementById('cue-ball').style.top = cueBall.position.y + 'px';
+        
         document.getElementById('eight-ball').style.left = eightBall.position.x + 'px';
         document.getElementById('eight-ball').style.top = eightBall.position.y + 'px';
     });
 
-    // Pro "Drag Anywhere" Aiming Mechanics
     let isAiming = false;
     let initialTouchX = 0, initialTouchY = 0;
     const tableElement = document.getElementById('pool-table');
@@ -200,6 +215,7 @@
     const turnText = document.getElementById('turn-text');
 
     tableElement.addEventListener('pointerdown', (e) => {
+        if(stopDomSync) return;
         isAiming = true;
         const rect = tableElement.getBoundingClientRect();
         initialTouchX = e.clientX - rect.left;
@@ -210,27 +226,22 @@
         if (!isAiming) return;
         const rect = tableElement.getBoundingClientRect();
         
-        // Calculate how far they pulled from their initial touch point
         const dragX = (e.clientX - rect.left) - initialTouchX;
         const dragY = (e.clientY - rect.top) - initialTouchY;
-        
         const distance = Math.hypot(dragX, dragY);
         const maxPull = 160; 
         const clampedDist = Math.min(distance, maxPull);
 
-        // Update Power Bar UI
         powerFill.style.width = (clampedDist / maxPull) * 100 + '%';
-
         ctx.clearRect(0, 0, 360, 640);
 
         if (distance > 5) {
             const angle = Math.atan2(dragY, dragX);
-            const aimLength = 120 + clampedDist; // Line extends further as you pull harder
+            const aimLength = 120 + clampedDist; 
             
             const targetX = cueBall.position.x - Math.cos(angle) * aimLength;
             const targetY = cueBall.position.y - Math.sin(angle) * aimLength;
 
-            // Draw Crisp Laser Trajectory
             ctx.beginPath();
             ctx.moveTo(cueBall.position.x, cueBall.position.y);
             ctx.lineTo(targetX, targetY);
@@ -239,7 +250,6 @@
             ctx.setLineDash([6, 6]);
             ctx.stroke();
 
-            // Draw Ghost Ball at the end of the line
             ctx.beginPath();
             ctx.arc(targetX, targetY, 12, 0, Math.PI * 2);
             ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
@@ -263,7 +273,7 @@
 
         if (distance > 10) {
             const angle = Math.atan2(dragY, dragX);
-            const power = Math.min(distance, 160) * 0.0007; // Fine-tuned power scale
+            const power = Math.min(distance, 160) * 0.0008; // Impact power
 
             const forceX = -Math.cos(angle) * power;
             const forceY = -Math.sin(angle) * power;
@@ -271,36 +281,75 @@
             Matter.Body.applyForce(cueBall, cueBall.position, { x: forceX, y: forceY });
             socket.emit('shoot', { x: forceX, y: forceY });
 
+            playSound('snd-strike');
             turnText.innerText = "WAITING FOR OPPONENT";
             turnText.classList.remove('active');
         }
         powerFill.style.width = '0%';
     });
 
-    // Multiplayer sync
     socket.on('opponentShot', (force) => {
+        playSound('snd-strike');
         Matter.Body.applyForce(cueBall, cueBall.position, force);
         turnText.innerText = "YOUR TURN";
         turnText.classList.add('active');
     });
 
-    // The Proposal Trigger!
+    // Real-Time Audio Mixer & Jumpscare Logic
     Events.on(engine, 'collisionStart', (event) => {
         event.pairs.forEach((pair) => {
-            const isPocket = pockets.includes(pair.bodyA) || pockets.includes(pair.bodyB);
-            const ball = pockets.includes(pair.bodyA) ? pair.bodyB : pair.bodyA;
+            const isPocket = pair.bodyA.label === 'pocket' || pair.bodyB.label === 'pocket';
+            const ball = pair.bodyA.label === 'pocket' ? pair.bodyB : pair.bodyA;
 
+            // 1. Play Collision Sounds
+            if (!isPocket) {
+                let relVel = Matter.Vector.magnitude(Matter.Vector.sub(pair.bodyA.velocity, pair.bodyB.velocity));
+                if (relVel > 0.5) playSound('snd-click', relVel / 15);
+            }
+
+            // 2. Pocket Logic
             if (isPocket) {
-                if (ball.label === '8ball') {
-                    setTimeout(() => {
-                        document.getElementById('proposal-screen').classList.add('visible');
-                        document.getElementById('magic-ball').classList.add('reveal');
-                    }, 500);
-                }
                 
-                if (ball === cueBall) { // Scratch respawn
-                    Matter.Body.setPosition(cueBall, { x: 180, y: 490 });
+                // Cue Ball Scratch
+                if (ball.label === 'cueball') {
+                    playSound('snd-hole');
+                    const cEl = document.getElementById('cue-ball');
+                    cEl.classList.add('pocketed');
                     Matter.Body.setVelocity(cueBall, { x: 0, y: 0 });
+                    Matter.Body.setStatic(cueBall, true);
+
+                    setTimeout(() => {
+                        Matter.Body.setPosition(cueBall, { x: 180, y: 490 });
+                        Matter.Body.setStatic(cueBall, false);
+                        cEl.classList.remove('pocketed');
+                    }, 1000); // Respawns after 1 sec
+                }
+
+                // THE JUMPSCARE SEQUENCE (8-Ball)
+                if (ball.label === '8ball') {
+                    stopDomSync = true;
+                    playSound('snd-hole');
+                    
+                    const el = document.getElementById('eight-ball');
+                    Matter.Body.setVelocity(eightBall, { x: 0, y: 0 });
+                    Matter.Body.setStatic(eightBall, true);
+                    
+                    // Step 1: Drop into pocket
+                    el.classList.add('pocketed'); 
+
+                    // Step 2: The JUMPSCARE
+                    setTimeout(() => {
+                        playSound('snd-jumpscare');
+                        el.classList.remove('pocketed');
+                        el.classList.add('jumpscare'); 
+
+                        // Step 3: Magic 8-Ball Reveal
+                        setTimeout(() => {
+                            document.getElementById('proposal-screen').classList.add('visible');
+                            document.getElementById('magic-ball').classList.add('reveal');
+                        }, 250); // Triggers right as the black ball swallows the screen
+
+                    }, 800); // Waits exactly 0.8 seconds inside the hole to build tension
                 }
             }
         });
