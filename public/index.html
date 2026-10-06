@@ -14,7 +14,23 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center; 
             height: 100vh; overflow: hidden; touch-action: none; font-family: 'Montserrat', sans-serif; color: white; 
         }
+
+        /* --- NEW START SCREEN (Forces Audio Unlock) --- */
+        #start-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(10, 15, 25, 0.95); z-index: 50000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        #start-btn {
+            background: #00e676; color: #000; padding: 20px 50px; font-size: 24px; 
+            font-weight: 800; border: none; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 230, 118, 0.4); text-transform: uppercase;
+            letter-spacing: 2px; transition: transform 0.2s;
+        }
+        #start-btn:active { transform: scale(0.95); }
+        .audio-warning { margin-top: 20px; font-size: 12px; color: #aaa; text-align: center; max-width: 250px;}
         
+        /* Game HUD */
         .hud { display: flex; justify-content: space-between; width: 360px; margin-bottom: 15px; align-items: center; }
         .turn-badge {
             background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 20px; 
@@ -23,6 +39,7 @@
         }
         #turn-text.active { color: #00e676; border-color: #00e676; }
 
+        /* Pool Table */
         .table-wrap {
             width: 360px; height: 640px; background: radial-gradient(circle, #2a7b48 0%, #114022 100%); 
             border: 22px solid #362210; border-radius: 24px; position: relative; 
@@ -74,6 +91,12 @@
 </head>
 <body>
 
+    <!-- START SCREEN -->
+    <div id="start-screen">
+        <button id="start-btn">TAP TO PLAY</button>
+        <div class="audio-warning">Make sure your phone is NOT on silent mode to hear game audio!</div>
+    </div>
+
     <div class="hud">
         <div class="turn-badge active" id="turn-text">PULL TO SHOOT</div>
         <div class="turn-badge">8-BALL</div>
@@ -113,18 +136,18 @@
 <script>
     const socket = io();
     
-    // --- ON-BOARD WEB AUDIO SYNTHESIZER ---
-    // (Bypasses all browser blocking and missing file errors)
+    // --- FOOLPROOF AUDIO ENGINE ---
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
 
-    function initAudio() {
-        if (!audioCtx) audioCtx = new AudioContext();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
-    
-    // Wake up audio engine the second they touch the screen
-    document.addEventListener('pointerdown', initAudio, { once: true });
+    // Triggered ONLY by the Start Button
+    document.getElementById('start-btn').addEventListener('click', () => {
+        audioCtx = new AudioContext();
+        audioCtx.resume().then(() => {
+            document.getElementById('start-screen').style.display = 'none';
+            playSound('start'); // Play a ping so you know it works!
+        });
+    });
 
     function playSound(type, vol = 1.0) {
         if (!audioCtx) return;
@@ -134,38 +157,39 @@
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         
-        if (type === 'strike') {
-            // A deep thud
+        if (type === 'start') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, t);
+            gain.gain.setValueAtTime(0.5, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+            osc.start(t); osc.stop(t + 0.5);
+        }
+        else if (type === 'strike') {
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(150, t);
             osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
             gain.gain.setValueAtTime(vol, t);
             gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
-            osc.start(t);
-            osc.stop(t + 0.2);
+            osc.start(t); osc.stop(t + 0.2);
         } 
         else if (type === 'click') {
-            // A sharp clack for balls hitting
             osc.type = 'sine';
             osc.frequency.setValueAtTime(800, t);
             osc.frequency.exponentialRampToValueAtTime(300, t + 0.03);
             gain.gain.setValueAtTime(vol * 0.8, t);
             gain.gain.exponentialRampToValueAtTime(0.01, t + 0.03);
-            osc.start(t);
-            osc.stop(t + 0.03);
+            osc.start(t); osc.stop(t + 0.03);
         }
         else if (type === 'hole') {
-            // Ball dropping into a pocket
             osc.type = 'sine';
             osc.frequency.setValueAtTime(300, t);
             osc.frequency.exponentialRampToValueAtTime(50, t + 0.4);
             gain.gain.setValueAtTime(vol, t);
             gain.gain.linearRampToValueAtTime(0.01, t + 0.4);
-            osc.start(t);
-            osc.stop(t + 0.4);
+            osc.start(t); osc.stop(t + 0.4);
         }
         else if (type === 'jumpscare') {
-            // Terrifying, loud, dissonant horror blast
+            // Maximum Volume Distorted Blast
             const freqs = [200, 215, 250, 440, 470, 800, 850];
             freqs.forEach(f => {
                 let o = audioCtx.createOscillator();
@@ -173,14 +197,11 @@
                 o.type = 'sawtooth';
                 o.frequency.setValueAtTime(f, t);
                 o.frequency.linearRampToValueAtTime(f - 20, t + 2.5);
-                g.gain.setValueAtTime(0.6, t); // Pushed hard to distort intentionally
+                g.gain.setValueAtTime(0.8, t); 
                 g.gain.exponentialRampToValueAtTime(0.01, t + 2.5);
-                o.connect(g);
-                g.connect(audioCtx.destination);
-                o.start(t);
-                o.stop(t + 2.5);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + 2.5);
             });
-            // White Noise Roar
             const bufferSize = audioCtx.sampleRate * 2.5;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -188,10 +209,9 @@
             const noise = audioCtx.createBufferSource();
             noise.buffer = buffer;
             const noiseGain = audioCtx.createGain();
-            noiseGain.gain.setValueAtTime(1.5, t);
+            noiseGain.gain.setValueAtTime(2.0, t);
             noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 2.5);
-            noise.connect(noiseGain);
-            noiseGain.connect(audioCtx.destination);
+            noise.connect(noiseGain); noiseGain.connect(audioCtx.destination);
             noise.start(t);
         }
     }
@@ -254,8 +274,7 @@
     const turnText = document.getElementById('turn-text');
 
     tableElement.addEventListener('pointerdown', (e) => {
-        if(stopDomSync) return;
-        initAudio(); // Ensures sound is ready
+        if(stopDomSync || document.getElementById('start-screen').style.display !== 'none') return;
         isAiming = true;
         const rect = tableElement.getBoundingClientRect();
         initialTouchX = e.clientX - rect.left;
@@ -340,16 +359,12 @@
             const isPocket = pair.bodyA.label === 'pocket' || pair.bodyB.label === 'pocket';
             const ball = pair.bodyA.label === 'pocket' ? pair.bodyB : pair.bodyA;
 
-            // 1. Play Collision Sounds
             if (!isPocket) {
                 let relVel = Matter.Vector.magnitude(Matter.Vector.sub(pair.bodyA.velocity, pair.bodyB.velocity));
                 if (relVel > 0.5) playSound('click', relVel / 15);
             }
 
-            // 2. Pocket Logic
             if (isPocket) {
-                
-                // Cue Ball Scratch
                 if (ball.label === 'cueball') {
                     playSound('hole');
                     const cEl = document.getElementById('cue-ball');
@@ -364,7 +379,6 @@
                     }, 1000); 
                 }
 
-                // THE JUMPSCARE SEQUENCE (8-Ball)
                 if (ball.label === '8ball' && !jumpscareTriggered) {
                     jumpscareTriggered = true;
                     stopDomSync = true;
