@@ -3,122 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>8-Ball Pool Challenge</title>
+    <title>8-Ball Pool Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { margin: 0; padding: 0; background-color: #121212; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; overflow: hidden; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; }
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap');
         
-        /* Game Container */
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
+        body { 
+            margin: 0; padding: 0; 
+            background: radial-gradient(circle at center, #1a1e29 0%, #080a0f 100%); 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            height: 100vh; overflow: hidden; touch-action: none; 
+            font-family: 'Montserrat', sans-serif; color: white; 
         }
+        
+        /* Modern HUD */
+        .hud {
+            display: flex; justify-content: space-between; width: 360px; margin-bottom: 15px; align-items: center;
+        }
+        .turn-badge {
+            background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 20px; 
+            font-size: 11px; font-weight: 800; letter-spacing: 1.5px; 
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: all 0.3s;
+        }
+        #turn-text.active { color: #00e676; border-color: #00e676; }
 
-        /* The Pool Table */
+        /* The Premium Pool Table */
         .table-wrap {
-            width: 360px;
-            height: 640px;
-            background-color: #1e5631;
-            border: 18px solid #4a3319;
-            border-radius: 18px;
-            position: relative;
-            box-shadow: inset 0 0 25px rgba(0,0,0,0.6), 0 15px 35px rgba(0,0,0,0.8);
+            width: 360px; height: 640px; 
+            background: radial-gradient(circle, #2a7b48 0%, #114022 100%); 
+            border: 22px solid #362210; border-radius: 24px; position: relative; 
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 20px 50px rgba(0,0,0,0.9);
+            border-image: linear-gradient(to bottom, #4a3018, #2a1a0c) 1;
         }
 
-        /* Pockets */
+        /* Inner Rail Shadow */
+        .table-wrap::before {
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.9); pointer-events: none; z-index: 5;
+        }
+
+        /* Deep Pockets */
         .pocket {
-            position: absolute; width: 42px; height: 42px; background-color: #050505; border-radius: 50%;
-            box-shadow: inset 0 5px 12px rgba(0,0,0,0.9);
-            transform: translate(-50%, -50%);
-            z-index: 1;
+            position: absolute; width: 46px; height: 46px; background: #000; border-radius: 50%;
+            box-shadow: inset 0 5px 15px rgba(255,255,255,0.15), inset 0 -5px 15px rgba(0,0,0,1);
+            transform: translate(-50%, -50%); z-index: 1; border: 2px solid #22150a;
         }
 
-        /* Balls */
+        /* High-Definition Canvas for Laser Aiming */
+        #aim-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none;
+        }
+
+        /* 3D Balls */
         .ball {
             position: absolute; width: 24px; height: 24px; border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: -2px -2px 5px rgba(0,0,0,0.6) inset, 2px 2px 5px rgba(255,255,255,0.4) inset, 2px 4px 6px rgba(0,0,0,0.5);
-            z-index: 2;
+            transform: translate(-50%, -50%); z-index: 3;
+            box-shadow: -3px -3px 8px rgba(0,0,0,0.7) inset, 2px 2px 8px rgba(255,255,255,0.6) inset, 3px 5px 10px rgba(0,0,0,0.7);
         }
+        #cue-ball { background: radial-gradient(circle at 35% 35%, #ffffff, #d4d4d4); }
+        #eight-ball { background: radial-gradient(circle at 35% 35%, #444, #000); display: flex; align-items: center; justify-content: center; }
+        #eight-ball::after { content: "8"; background: #fff; color: #000; width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; box-shadow: inset 0px 0px 2px rgba(0,0,0,0.5); }
 
-        #cue-ball { background-color: #fff; cursor: pointer; }
-        #eight-ball { background-color: #111; display: flex; align-items: center; justify-content: center; z-index: 2; }
-        #eight-ball::after { content: "8"; background: white; color: black; width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; }
-
-        /* Aim Line (SVG Overlay) */
-        #aim-svg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3;
-        }
-
-        /* Power Bar UI */
+        /* Neon Power Bar */
         .power-container {
-            width: 300px;
-            height: 14px;
-            background-color: #222;
-            border: 2px solid #555;
-            border-radius: 7px;
-            overflow: hidden;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            width: 360px; height: 10px; background: #0a0a0a; border-radius: 5px; margin-top: 25px; 
+            border: 2px solid #222; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
         }
         .power-fill {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #4CAF50, #FFEB3B, #F44336);
-            transition: width 0.05s linear;
-        }
-        .turn-indicator {
-            font-size: 14px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            color: #ccc;
+            height: 100%; width: 0%; background: linear-gradient(90deg, #00e676, #ffea00, #ff1744); 
+            transition: width 0.05s linear; box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
         }
 
-        /* Proposal Screen CSS */
-        #proposal-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 2s ease-in-out; z-index: 100; color: white;}
+        /* The Secret Proposal Screen */
+        #proposal-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.98); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 2s ease-in-out; z-index: 100; color: white;}
         #proposal-screen.visible { opacity: 1; pointer-events: all; }
-        .magic-8-ball { width: 250px; height: 250px; background-color: #111; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: -10px -10px 30px rgba(255,255,255,0.1) inset, 10px 10px 30px rgba(0,0,0,0.8); animation: shake 1.5s ease-in-out 1s forwards; opacity: 0; transform: scale(0.5); transition: all 1s ease-in-out; }
+        .magic-8-ball { width: 280px; height: 280px; background-color: #111; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: -10px -10px 40px rgba(255,255,255,0.05) inset, 10px 10px 40px rgba(0,0,0,0.9); animation: shake 1.5s ease-in-out 1s forwards; opacity: 0; transform: scale(0.5); transition: all 1s ease-in-out; }
         .magic-8-ball.reveal { opacity: 1; transform: scale(1); }
-        .fortune-window { width: 120px; height: 120px; background-color: #000; border-radius: 50%; border: 4px solid #222; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 2s ease-in-out 2.5s; }
+        .fortune-window { width: 130px; height: 130px; background-color: #000; border-radius: 50%; border: 6px solid #1a1a1a; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 2s ease-in-out 2.5s; box-shadow: inset 0 0 20px rgba(0,0,0,1); }
         .magic-8-ball.reveal .fortune-window { opacity: 1; }
-        .triangle { width: 0; height: 0; border-left: 45px solid transparent; border-right: 45px solid transparent; border-top: 80px solid #1e3a8a; position: relative; display: flex; align-items: center; justify-content: center; }
-        .message { position: absolute; top: -70px; left: -40px; width: 80px; text-align: center; color: #fff; font-size: 14px; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
-        .answers { margin-top: 40px; opacity: 0; transition: opacity 1s ease-in-out 4s; }
+        .triangle { width: 0; height: 0; border-left: 50px solid transparent; border-right: 50px solid transparent; border-top: 90px solid #1e3a8a; position: relative; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 0 10px rgba(30, 58, 138, 0.5));}
+        .message { position: absolute; top: -75px; left: -45px; width: 90px; text-align: center; color: #fff; font-size: 14px; font-weight: 800; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); }
+        .answers { margin-top: 50px; opacity: 0; transition: opacity 1s ease-in-out 4s; display: flex; gap: 15px;}
         .magic-8-ball.reveal ~ .answers { opacity: 1; }
-        .answer-btn { background-color: #4CAF50; color: white; padding: 15px 30px; font-size: 18px; border: none; border-radius: 10px; margin: 10px; cursor: pointer; font-weight: bold; transition: 0.3s;}
-        .answer-btn:hover { background-color: #45a049; }
+        .answer-btn { background-color: #00e676; color: #000; padding: 15px 35px; font-size: 16px; border: none; border-radius: 30px; cursor: pointer; font-weight: 800; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px;}
+        .answer-btn:hover { background-color: #00c853; transform: scale(1.05); }
         @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
     </style>
 </head>
 <body>
 
-    <div class="game-container">
-        <div class="turn-indicator" id="turn-text">PULL BACK TO SHOOT</div>
-        
-        <div class="table-wrap" id="pool-table">
-            <!-- Pockets -->
-            <div class="pocket" style="left: 20px; top: 20px;"></div>
-            <div class="pocket" style="left: 340px; top: 20px;"></div>
-            <div class="pocket" style="left: 20px; top: 320px;"></div>
-            <div class="pocket" style="left: 340px; top: 320px;"></div>
-            <div class="pocket" style="left: 20px; top: 620px;"></div>
-            <div class="pocket" style="left: 340px; top: 620px;"></div>
+    <div class="hud">
+        <div class="turn-badge active" id="turn-text">PULL TO SHOOT</div>
+        <div class="turn-badge">8-BALL</div>
+    </div>
+    
+    <div class="table-wrap" id="pool-table">
+        <!-- Pockets -->
+        <div class="pocket" style="left: 20px; top: 20px;"></div>
+        <div class="pocket" style="left: 340px; top: 20px;"></div>
+        <div class="pocket" style="left: 20px; top: 320px;"></div>
+        <div class="pocket" style="left: 340px; top: 320px;"></div>
+        <div class="pocket" style="left: 20px; top: 620px;"></div>
+        <div class="pocket" style="left: 340px; top: 620px;"></div>
 
-            <!-- Aim Line Overlay -->
-            <svg id="aim-svg">
-                <line id="aim-line" x1="0" y1="0" x2="0" y2="0" stroke="rgba(255, 255, 255, 0.6)" stroke-width="2" stroke-dasharray="4,4" />
-            </svg>
+        <!-- High-Def Canvas for Aim Laser -->
+        <canvas id="aim-canvas"></canvas>
 
-            <!-- Balls -->
-            <div id="cue-ball" class="ball"></div>
-            <div id="eight-ball" class="ball"></div>
-        </div>
+        <!-- Balls -->
+        <div id="cue-ball" class="ball"></div>
+        <div id="eight-ball" class="ball"></div>
+    </div>
 
-        <div class="power-container">
-            <div class="power-fill" id="power-fill"></div>
-        </div>
+    <div class="power-container">
+        <div class="power-fill" id="power-fill"></div>
     </div>
 
     <!-- The Hidden Proposal Screen -->
@@ -139,22 +138,26 @@
 <script>
     const socket = io();
     
-    // Physics Engine Setup
+    // Physics Setup
     const Engine = Matter.Engine, Runner = Matter.Runner, 
           Bodies = Matter.Bodies, Composite = Matter.Composite, Events = Matter.Events;
     
     const engine = Engine.create();
     engine.gravity.y = 0; 
+    
+    // Higher iteration counts for hyper-realistic collisions
+    engine.positionIterations = 8;
+    engine.velocityIterations = 8;
 
-    // Table boundaries
+    // Table Cushions (Bouncier for realism)
+    const wallOptions = { isStatic: true, restitution: 0.8 };
     Composite.add(engine.world, [
-        Bodies.rectangle(180, -10, 360, 20, { isStatic: true }), 
-        Bodies.rectangle(180, 650, 360, 20, { isStatic: true }), 
-        Bodies.rectangle(-10, 320, 20, 640, { isStatic: true }), 
-        Bodies.rectangle(370, 320, 20, 640, { isStatic: true })  
+        Bodies.rectangle(180, -11, 360, 22, wallOptions), 
+        Bodies.rectangle(180, 651, 360, 22, wallOptions), 
+        Bodies.rectangle(-11, 320, 22, 640, wallOptions), 
+        Bodies.rectangle(371, 320, 22, 640, wallOptions)  
     ]);
 
-    // Pockets
     const pocketOptions = { isStatic: true, isSensor: true };
     const pockets = [
         Bodies.circle(20, 20, 22, pocketOptions), Bodies.circle(340, 20, 22, pocketOptions),
@@ -163,119 +166,125 @@
     ];
     Composite.add(engine.world, pockets);
 
-    // Realistic Glide Physics
-    const ballOptions = { frictionAir: 0.012, restitution: 0.92, density: 0.005 };
+    // Realistic Heavy Billiard Ball Physics
+    const ballOptions = { frictionAir: 0.015, restitution: 0.95, density: 0.01 };
 
     let cueBall = Bodies.circle(180, 490, 12, ballOptions);
     let eightBall = Bodies.circle(180, 150, 12, { ...ballOptions, label: '8ball' });
-
     Composite.add(engine.world, [cueBall, eightBall]);
 
     const runner = Runner.create();
     Runner.run(runner, engine);
 
-    // Sync Physics to Visual DOM elements
+    // High-Resolution Aiming Canvas Setup
+    const aimCanvas = document.getElementById('aim-canvas');
+    const ctx = aimCanvas.getContext('2d');
+    const scale = window.devicePixelRatio || 1;
+    aimCanvas.width = 360 * scale;
+    aimCanvas.height = 640 * scale;
+    ctx.scale(scale, scale);
+
+    // Sync DOM to Physics
     Events.on(engine, 'afterUpdate', () => {
         document.getElementById('cue-ball').style.left = cueBall.position.x + 'px';
         document.getElementById('cue-ball').style.top = cueBall.position.y + 'px';
-        
         document.getElementById('eight-ball').style.left = eightBall.position.x + 'px';
         document.getElementById('eight-ball').style.top = eightBall.position.y + 'px';
     });
 
-    // Aiming & Interactive Mechanics
+    // Pro "Drag Anywhere" Aiming Mechanics
     let isAiming = false;
-    let startX = 0, startY = 0;
+    let initialTouchX = 0, initialTouchY = 0;
     const tableElement = document.getElementById('pool-table');
-    const aimLine = document.getElementById('aim-line');
     const powerFill = document.getElementById('power-fill');
     const turnText = document.getElementById('turn-text');
 
     tableElement.addEventListener('pointerdown', (e) => {
+        isAiming = true;
         const rect = tableElement.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-
-        // Check if clicking near cue ball
-        const dist = Math.hypot(mouseX - cueBall.position.x, mouseY - cueBall.position.y);
-        if (dist < 30) {
-            isAiming = true;
-            startX = cueBall.position.x;
-            startY = cueBall.position.y;
-        }
+        initialTouchX = e.clientX - rect.left;
+        initialTouchY = e.clientY - rect.top;
     });
 
     tableElement.addEventListener('pointermove', (e) => {
         if (!isAiming) return;
-
         const rect = tableElement.getBoundingClientRect();
-        const currentX = e.clientX - rect.left;
-        const currentY = e.clientY - rect.top;
-
-        // Pullback vector (slingshot direction is opposite to drag)
-        const pullX = currentX - cueBall.position.x;
-        const pullY = currentY - cueBall.position.y;
-        const distance = Math.hypot(pullX, pullY);
-
-        // Max pull distance cap
-        const maxPull = 120;
-        const clampedDist = Math.min(distance, maxPull);
         
-        // Update Power Bar
-        const powerPercent = (clampedDist / maxPull) * 100;
-        powerFill.style.width = powerPercent + '%';
+        // Calculate how far they pulled from their initial touch point
+        const dragX = (e.clientX - rect.left) - initialTouchX;
+        const dragY = (e.clientY - rect.top) - initialTouchY;
+        
+        const distance = Math.hypot(dragX, dragY);
+        const maxPull = 160; 
+        const clampedDist = Math.min(distance, maxPull);
+
+        // Update Power Bar UI
+        powerFill.style.width = (clampedDist / maxPull) * 100 + '%';
+
+        ctx.clearRect(0, 0, 360, 640);
 
         if (distance > 5) {
-            // Angle of shot projection
-            const angle = Math.atan2(pullY, pullX);
-            const aimLength = 100; // length of projected line
+            const angle = Math.atan2(dragY, dragX);
+            const aimLength = 120 + clampedDist; // Line extends further as you pull harder
+            
             const targetX = cueBall.position.x - Math.cos(angle) * aimLength;
             const targetY = cueBall.position.y - Math.sin(angle) * aimLength;
 
-            aimLine.setAttribute('x1', cueBall.position.x);
-            aimLine.setAttribute('y1', cueBall.position.y);
-            aimLine.setAttribute('x2', targetX);
-            aimLine.setAttribute('y2', targetY);
+            // Draw Crisp Laser Trajectory
+            ctx.beginPath();
+            ctx.moveTo(cueBall.position.x, cueBall.position.y);
+            ctx.lineTo(targetX, targetY);
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 6]);
+            ctx.stroke();
+
+            // Draw Ghost Ball at the end of the line
+            ctx.beginPath();
+            ctx.arc(targetX, targetY, 12, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+            ctx.fill();
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+            ctx.lineWidth = 1;
+            ctx.setLineDash([]);
+            ctx.stroke();
         }
     });
 
     tableElement.addEventListener('pointerup', (e) => {
         if (!isAiming) return;
         isAiming = false;
-
+        ctx.clearRect(0, 0, 360, 640);
+        
         const rect = tableElement.getBoundingClientRect();
-        const endX = e.clientX - rect.left;
-        const endY = e.clientY - rect.top;
-
-        const pullX = endX - cueBall.position.x;
-        const pullY = endY - cueBall.position.y;
-        const distance = Math.hypot(pullX, pullY);
+        const dragX = (e.clientX - rect.left) - initialTouchX;
+        const dragY = (e.clientY - rect.top) - initialTouchY;
+        const distance = Math.hypot(dragX, dragY);
 
         if (distance > 10) {
-            const angle = Math.atan2(pullY, pullX);
-            const power = Math.min(distance, 120) * 0.00035; // strength scaling
+            const angle = Math.atan2(dragY, dragX);
+            const power = Math.min(distance, 160) * 0.0007; // Fine-tuned power scale
 
-            const forceX = Math.cos(angle) * power;
-            const forceY = Math.sin(angle) * power;
+            const forceX = -Math.cos(angle) * power;
+            const forceY = -Math.sin(angle) * power;
 
             Matter.Body.applyForce(cueBall, cueBall.position, { x: forceX, y: forceY });
             socket.emit('shoot', { x: forceX, y: forceY });
 
-            turnText.innerText = "WAITING FOR OPPONENT...";
+            turnText.innerText = "WAITING FOR OPPONENT";
+            turnText.classList.remove('active');
         }
-
-        // Reset UI elements
-        aimLine.setAttribute('x1', 0); aimLine.setAttribute('y1', 0);
-        aimLine.setAttribute('x2', 0); aimLine.setAttribute('y2', 0);
         powerFill.style.width = '0%';
     });
 
+    // Multiplayer sync
     socket.on('opponentShot', (force) => {
         Matter.Body.applyForce(cueBall, cueBall.position, force);
         turnText.innerText = "YOUR TURN";
+        turnText.classList.add('active');
     });
 
-    // Pocket Collision Logic (Proposal Trigger)
+    // The Proposal Trigger!
     Events.on(engine, 'collisionStart', (event) => {
         event.pairs.forEach((pair) => {
             const isPocket = pockets.includes(pair.bodyA) || pockets.includes(pair.bodyB);
@@ -289,7 +298,7 @@
                     }, 500);
                 }
                 
-                if (ball === cueBall) {
+                if (ball === cueBall) { // Scratch respawn
                     Matter.Body.setPosition(cueBall, { x: 180, y: 490 });
                     Matter.Body.setVelocity(cueBall, { x: 0, y: 0 });
                 }
