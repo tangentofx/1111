@@ -15,7 +15,6 @@
             height: 100vh; overflow: hidden; touch-action: none; font-family: 'Montserrat', sans-serif; color: white; 
         }
         
-        /* Modern HUD */
         .hud { display: flex; justify-content: space-between; width: 360px; margin-bottom: 15px; align-items: center; }
         .turn-badge {
             background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 20px; 
@@ -24,7 +23,6 @@
         }
         #turn-text.active { color: #00e676; border-color: #00e676; }
 
-        /* The Premium Pool Table */
         .table-wrap {
             width: 360px; height: 640px; background: radial-gradient(circle, #2a7b48 0%, #114022 100%); 
             border: 22px solid #362210; border-radius: 24px; position: relative; 
@@ -36,7 +34,6 @@
             box-shadow: inset 0 0 15px rgba(0,0,0,0.9); pointer-events: none; z-index: 5;
         }
 
-        /* Deep Pockets */
         .pocket {
             position: absolute; width: 46px; height: 46px; background: #000; border-radius: 50%;
             box-shadow: inset 0 5px 15px rgba(255,255,255,0.15), inset 0 -5px 15px rgba(0,0,0,1);
@@ -45,7 +42,6 @@
 
         #aim-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
 
-        /* 3D Balls */
         .ball {
             position: absolute; width: 24px; height: 24px; border-radius: 50%;
             transform: translate(-50%, -50%); z-index: 3;
@@ -55,33 +51,12 @@
         #eight-ball { background: radial-gradient(circle at 35% 35%, #444, #000); display: flex; align-items: center; justify-content: center; }
         #eight-ball::after { content: "8"; background: #fff; color: #000; width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; box-shadow: inset 0px 0px 2px rgba(0,0,0,0.5); }
 
-        /* --- THE NEW ANIMATIONS --- */
-        
-        /* Realistic Pocket Drop */
-        .pocketed {
-            transform: translate(-50%, -50%) scale(0) !important;
-            opacity: 0 !important;
-            transition: all 0.4s cubic-bezier(0.55, 0.085, 0.68, 0.53) !important;
-        }
+        .pocketed { transform: translate(-50%, -50%) scale(0) !important; opacity: 0 !important; transition: all 0.4s cubic-bezier(0.55, 0.085, 0.68, 0.53) !important; }
+        .jumpscare { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) scale(150) !important; z-index: 9999 !important; opacity: 1 !important; transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1) !important; }
 
-        /* The Jumpscare Blast */
-        .jumpscare {
-            position: fixed !important;
-            top: 50% !important; left: 50% !important;
-            transform: translate(-50%, -50%) scale(150) !important;
-            z-index: 9999 !important;
-            opacity: 1 !important;
-            transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1) !important;
-        }
-
-        /* Power Bar */
-        .power-container {
-            width: 360px; height: 10px; background: #0a0a0a; border-radius: 5px; margin-top: 25px; 
-            border: 2px solid #222; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
-        }
+        .power-container { width: 360px; height: 10px; background: #0a0a0a; border-radius: 5px; margin-top: 25px; border: 2px solid #222; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
         .power-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00e676, #ffea00, #ff1744); transition: width 0.05s linear; }
 
-        /* Proposal Screen */
         #proposal-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 1); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 1.5s ease-in-out; z-index: 10000; color: white;}
         #proposal-screen.visible { opacity: 1; pointer-events: all; }
         .magic-8-ball { width: 280px; height: 280px; background-color: #111; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: -10px -10px 40px rgba(255,255,255,0.05) inset, 10px 10px 40px rgba(0,0,0,0.9); animation: shake 1.5s ease-in-out 1s forwards; opacity: 0; transform: scale(0.5); transition: all 1s ease-in-out; }
@@ -99,12 +74,6 @@
 </head>
 <body>
 
-    <!-- Loaded Sound Effects -->
-    <audio id="snd-strike" src="https://cdn.jsdelivr.net/gh/bencentra/canvas-billiards/sounds/strike.wav"></audio>
-    <audio id="snd-click" src="https://cdn.jsdelivr.net/gh/bencentra/canvas-billiards/sounds/click.wav"></audio>
-    <audio id="snd-hole" src="https://cdn.jsdelivr.net/gh/bencentra/canvas-billiards/sounds/hole.wav"></audio>
-    <audio id="snd-jumpscare" src="https://actions.google.com/sounds/v1/horror/scary_whoosh.ogg"></audio>
-
     <div class="hud">
         <div class="turn-badge active" id="turn-text">PULL TO SHOOT</div>
         <div class="turn-badge">8-BALL</div>
@@ -119,7 +88,6 @@
         <div class="pocket" style="left: 340px; top: 620px;"></div>
 
         <canvas id="aim-canvas"></canvas>
-
         <div id="cue-ball" class="ball"></div>
         <div id="eight-ball" class="ball"></div>
     </div>
@@ -145,24 +113,98 @@
 <script>
     const socket = io();
     
-    // Audio Player Function
-    function playSound(id, vol = 1.0) {
-        let snd = document.getElementById(id);
-        if(!snd) return;
-        snd.currentTime = 0;
-        snd.volume = Math.min(vol, 1);
-        snd.play().catch(e => {}); // Ignores autoplay restrictions until screen is touched
+    // --- ON-BOARD WEB AUDIO SYNTHESIZER ---
+    // (Bypasses all browser blocking and missing file errors)
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
+    function initAudio() {
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    
+    // Wake up audio engine the second they touch the screen
+    document.addEventListener('pointerdown', initAudio, { once: true });
+
+    function playSound(type, vol = 1.0) {
+        if (!audioCtx) return;
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        if (type === 'strike') {
+            // A deep thud
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(150, t);
+            osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+            gain.gain.setValueAtTime(vol, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+            osc.start(t);
+            osc.stop(t + 0.2);
+        } 
+        else if (type === 'click') {
+            // A sharp clack for balls hitting
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, t);
+            osc.frequency.exponentialRampToValueAtTime(300, t + 0.03);
+            gain.gain.setValueAtTime(vol * 0.8, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.03);
+            osc.start(t);
+            osc.stop(t + 0.03);
+        }
+        else if (type === 'hole') {
+            // Ball dropping into a pocket
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, t);
+            osc.frequency.exponentialRampToValueAtTime(50, t + 0.4);
+            gain.gain.setValueAtTime(vol, t);
+            gain.gain.linearRampToValueAtTime(0.01, t + 0.4);
+            osc.start(t);
+            osc.stop(t + 0.4);
+        }
+        else if (type === 'jumpscare') {
+            // Terrifying, loud, dissonant horror blast
+            const freqs = [200, 215, 250, 440, 470, 800, 850];
+            freqs.forEach(f => {
+                let o = audioCtx.createOscillator();
+                let g = audioCtx.createGain();
+                o.type = 'sawtooth';
+                o.frequency.setValueAtTime(f, t);
+                o.frequency.linearRampToValueAtTime(f - 20, t + 2.5);
+                g.gain.setValueAtTime(0.6, t); // Pushed hard to distort intentionally
+                g.gain.exponentialRampToValueAtTime(0.01, t + 2.5);
+                o.connect(g);
+                g.connect(audioCtx.destination);
+                o.start(t);
+                o.stop(t + 2.5);
+            });
+            // White Noise Roar
+            const bufferSize = audioCtx.sampleRate * 2.5;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1);
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(1.5, t);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 2.5);
+            noise.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            noise.start(t);
+        }
     }
 
+    // --- PHYSICS ENGINE ---
     const Engine = Matter.Engine, Runner = Matter.Runner, 
           Bodies = Matter.Bodies, Composite = Matter.Composite, Events = Matter.Events;
     
     const engine = Engine.create();
     engine.gravity.y = 0; 
-    engine.positionIterations = 10; // Extra realistic
+    engine.positionIterations = 10; 
     engine.velocityIterations = 10;
 
-    // Bouncy Rail Cushions
     const wallOptions = { isStatic: true, restitution: 0.85, label: 'wall' };
     Composite.add(engine.world, [
         Bodies.rectangle(180, -11, 360, 22, wallOptions), 
@@ -179,7 +221,6 @@
     ];
     Composite.add(engine.world, pockets);
 
-    // Ultra-Realistic Ball Mass & Friction
     const ballOptions = { frictionAir: 0.012, restitution: 0.9, density: 0.02 };
 
     let cueBall = Bodies.circle(180, 490, 12, { ...ballOptions, label: 'cueball' });
@@ -196,14 +237,12 @@
     aimCanvas.height = 640 * scale;
     ctx.scale(scale, scale);
 
-    let stopDomSync = false; // Used during animations
+    let stopDomSync = false; 
 
-    // Sync DOM to Physics
     Events.on(engine, 'afterUpdate', () => {
         if(stopDomSync) return;
         document.getElementById('cue-ball').style.left = cueBall.position.x + 'px';
         document.getElementById('cue-ball').style.top = cueBall.position.y + 'px';
-        
         document.getElementById('eight-ball').style.left = eightBall.position.x + 'px';
         document.getElementById('eight-ball').style.top = eightBall.position.y + 'px';
     });
@@ -216,6 +255,7 @@
 
     tableElement.addEventListener('pointerdown', (e) => {
         if(stopDomSync) return;
+        initAudio(); // Ensures sound is ready
         isAiming = true;
         const rect = tableElement.getBoundingClientRect();
         initialTouchX = e.clientX - rect.left;
@@ -225,7 +265,6 @@
     tableElement.addEventListener('pointermove', (e) => {
         if (!isAiming) return;
         const rect = tableElement.getBoundingClientRect();
-        
         const dragX = (e.clientX - rect.left) - initialTouchX;
         const dragY = (e.clientY - rect.top) - initialTouchY;
         const distance = Math.hypot(dragX, dragY);
@@ -238,7 +277,6 @@
         if (distance > 5) {
             const angle = Math.atan2(dragY, dragX);
             const aimLength = 120 + clampedDist; 
-            
             const targetX = cueBall.position.x - Math.cos(angle) * aimLength;
             const targetY = cueBall.position.y - Math.sin(angle) * aimLength;
 
@@ -273,7 +311,7 @@
 
         if (distance > 10) {
             const angle = Math.atan2(dragY, dragX);
-            const power = Math.min(distance, 160) * 0.0008; // Impact power
+            const power = Math.min(distance, 160) * 0.0008; 
 
             const forceX = -Math.cos(angle) * power;
             const forceY = -Math.sin(angle) * power;
@@ -281,7 +319,7 @@
             Matter.Body.applyForce(cueBall, cueBall.position, { x: forceX, y: forceY });
             socket.emit('shoot', { x: forceX, y: forceY });
 
-            playSound('snd-strike');
+            playSound('strike');
             turnText.innerText = "WAITING FOR OPPONENT";
             turnText.classList.remove('active');
         }
@@ -289,13 +327,14 @@
     });
 
     socket.on('opponentShot', (force) => {
-        playSound('snd-strike');
+        playSound('strike');
         Matter.Body.applyForce(cueBall, cueBall.position, force);
         turnText.innerText = "YOUR TURN";
         turnText.classList.add('active');
     });
 
-    // Real-Time Audio Mixer & Jumpscare Logic
+    let jumpscareTriggered = false;
+
     Events.on(engine, 'collisionStart', (event) => {
         event.pairs.forEach((pair) => {
             const isPocket = pair.bodyA.label === 'pocket' || pair.bodyB.label === 'pocket';
@@ -304,7 +343,7 @@
             // 1. Play Collision Sounds
             if (!isPocket) {
                 let relVel = Matter.Vector.magnitude(Matter.Vector.sub(pair.bodyA.velocity, pair.bodyB.velocity));
-                if (relVel > 0.5) playSound('snd-click', relVel / 15);
+                if (relVel > 0.5) playSound('click', relVel / 15);
             }
 
             // 2. Pocket Logic
@@ -312,7 +351,7 @@
                 
                 // Cue Ball Scratch
                 if (ball.label === 'cueball') {
-                    playSound('snd-hole');
+                    playSound('hole');
                     const cEl = document.getElementById('cue-ball');
                     cEl.classList.add('pocketed');
                     Matter.Body.setVelocity(cueBall, { x: 0, y: 0 });
@@ -322,34 +361,31 @@
                         Matter.Body.setPosition(cueBall, { x: 180, y: 490 });
                         Matter.Body.setStatic(cueBall, false);
                         cEl.classList.remove('pocketed');
-                    }, 1000); // Respawns after 1 sec
+                    }, 1000); 
                 }
 
                 // THE JUMPSCARE SEQUENCE (8-Ball)
-                if (ball.label === '8ball') {
+                if (ball.label === '8ball' && !jumpscareTriggered) {
+                    jumpscareTriggered = true;
                     stopDomSync = true;
-                    playSound('snd-hole');
+                    playSound('hole');
                     
                     const el = document.getElementById('eight-ball');
                     Matter.Body.setVelocity(eightBall, { x: 0, y: 0 });
                     Matter.Body.setStatic(eightBall, true);
                     
-                    // Step 1: Drop into pocket
                     el.classList.add('pocketed'); 
 
-                    // Step 2: The JUMPSCARE
                     setTimeout(() => {
-                        playSound('snd-jumpscare');
+                        playSound('jumpscare');
                         el.classList.remove('pocketed');
                         el.classList.add('jumpscare'); 
 
-                        // Step 3: Magic 8-Ball Reveal
                         setTimeout(() => {
                             document.getElementById('proposal-screen').classList.add('visible');
                             document.getElementById('magic-ball').classList.add('reveal');
-                        }, 250); // Triggers right as the black ball swallows the screen
-
-                    }, 800); // Waits exactly 0.8 seconds inside the hole to build tension
+                        }, 250); 
+                    }, 800); 
                 }
             }
         });
